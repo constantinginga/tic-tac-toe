@@ -7,3 +7,18 @@
 html, body {
     font-size: 10px;
 }
+
+#game-grid {
+    user-select: none;
+    background: palegoldenrod;
+    width: 60rem;
+    height: 60rem;
+    display: grid;
+    grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+    gap: 5px;
+    margin: 10rem auto;
+}
+
+.game-cell {
+    background: pink;
+}
