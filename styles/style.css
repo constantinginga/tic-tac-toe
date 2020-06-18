@@ -8,6 +8,12 @@ html, body {
     font-size: 10px;
 }
 
+#winner {
+    margin: 5rem auto;
+    font-size: 3rem;
+    text-align: center;
+}
+
 #game-grid {
     user-select: none;
     background: palegoldenrod;
@@ -16,9 +22,13 @@ html, body {
     display: grid;
     grid-template: repeat(3, 1fr) / repeat(3, 1fr);
     gap: 5px;
-    margin: 10rem auto;
+    margin: .5rem auto;
 }
 
 .game-cell {
     background: pink;
+    font-size: 8rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
