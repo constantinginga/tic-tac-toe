@@ -1,3 +1,10 @@
+:root {
+    --darkblue: #16264c;
+    --darkred: #ac3235;
+    --green: #006400;
+    --gameborder: .2rem solid var(--darkblue);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -8,27 +15,83 @@ html, body {
     font-size: 10px;
 }
 
+body {
+    font-family: 'Gochi Hand', cursive;
+    background-image: url("https://i.imgur.com/CqYaz1G.png");
+    color: var(--darkblue);
+}
+
+/* #game-container {
+    display: none;
+    display: block;
+} */
+
 #winner {
-    margin: 5rem auto;
-    font-size: 3rem;
+    font-family: 'Pacifico', cursive;
+    margin: 3rem auto;
+    font-size: 4rem;
+    letter-spacing: .02rem;
     text-align: center;
 }
 
 #game-grid {
     user-select: none;
-    background: palegoldenrod;
     width: 60rem;
     height: 60rem;
     display: grid;
     grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-    gap: 5px;
-    margin: .5rem auto;
+    margin: 5rem auto;
 }
 
 .game-cell {
-    background: pink;
     font-size: 8rem;
     display: flex;
     justify-content: center;
     align-items: center;
 }
+
+.game-cell:nth-child(1), .game-cell:nth-child(2),
+.game-cell:nth-child(4), .game-cell:nth-child(5) {
+    border-right: var(--gameborder);
+    border-bottom: var(--gameborder);
+} 
+
+.game-cell:nth-child(3), .game-cell:nth-child(6) {
+    border-bottom: var(--gameborder);
+}
+
+.game-cell:nth-child(7), .game-cell:nth-child(8) {
+    border-right: var(--gameborder);
+}
+
+#again {
+    visibility: hidden;
+    font-family: 'Gochi Hand', cursive;
+    font-size: 2.5rem;
+    letter-spacing: .05rem;
+    color: var(--darkblue);
+    cursor: pointer;
+    display: block;
+    padding: 1rem 1.2rem;
+    margin: 2rem auto;
+    background: none;
+    outline: none;
+    border: var(--gameborder);
+    border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+}
+
+#again:hover {
+    color: var(--green);
+    border-color: var(--green);
+}
+
+.crossed {
+    background:
+        linear-gradient(to top right,
+           rgba(0,0,0,0) 0%,
+           rgba(0,0,0,0) calc(50% - .2rem),
+           rgba(0,0,0,1) 50%,
+           rgba(0,0,0,0) calc(50% + .2rem),
+           rgba(0,0,0,0) 100%);
+}
+

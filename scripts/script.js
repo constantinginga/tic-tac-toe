@@ -1,5 +1,8 @@
-const gameGrid = document.querySelector('#game-grid'),
-    gameCells = document.querySelectorAll('.game-cell');
+const gameContainer = document.querySelector('#game-container'), 
+    gameGrid = document.querySelector('#game-grid'),
+    gameCells = document.querySelectorAll('.game-cell'),
+    winnerPara = document.querySelector('#winner'),
+    againBtn = document.querySelector('#again');
 
 let gameState = true;
 
@@ -7,34 +10,41 @@ let gameState = true;
 
 
 // TO-DO
-// X red, O blue (both dark)
-// choose font (for marks and for text different)
+// change checkWinner algorithm to be based on line orientation (add orientation property to winner object)
+    // pass winner object into function that draws line (add line with css)
 // first show form, then after hitting play button, show board
 // two forms side by side: Name, mark;
-// when game finished, announce winner and show 'play again' button
-// when click 'play again', reset board with animation and hide button and winner announcement
 // add transition animations
 // make it responsive (both form and board)
-// make background math paper
 // change all instances of private variables with underscore
 // set gamestate to true when user clicks play (reset the temp value of true above)
 
 
 const gameBoard = (() => {
+    
     const board = [];
+
     const update = (cell, i) => {
         // fill board array and html divs
         if (cell.innerHTML === '') {
             board[i] = gameLogic.makeTurn();
-            cell.innerHTML = `<p>${board[i]}</p>`
+            cell.innerHTML = displayController.setColor(board[i]);
         }
-        let winner = gameLogic.checkWinner();
-        // if there's a winner, declare the winner
-        if (winner) displayController.announceWinner(winner)
+        let _winner = gameLogic.checkWinner();
+        // if there's a _winner, declare the _winner
+        if (_winner) displayController.announceWinner(_winner)
         // if the board is full, declared tie
         else if (board.length === 9 && !board.includes(undefined)) displayController.announceWinner(`You tied.`);
     }
-    return {board, update};
+
+    // clear board array and html divs
+    const reset = () => {
+        board.length = 0;
+        gameCells.forEach(cell => cell.innerHTML = '');
+        gameState = true;
+    }
+
+    return {board, update, reset};
 })();
 
 
@@ -61,29 +71,29 @@ const gameLogic = (() => {
     }
 
     const checkWinner = () => {
-        let position, winner;
+        let _position, _winner = {};
         // check for the right pattern
         if (gameBoard.board[4] !== undefined) {
-            position = gameBoard.board[4];
-            if (gameBoard.board[0] === position && gameBoard.board[8] === position || 
-                gameBoard.board[2] === position && gameBoard.board[6] === position ||
-                gameBoard.board[1] === position && gameBoard.board[7] === position ||
-                gameBoard.board[3] === position && gameBoard.board[5] === position) winner = position;
+            _position = gameBoard.board[4];
+            if (gameBoard.board[0] === _position && gameBoard.board[8] === _position || 
+                gameBoard.board[2] === _position && gameBoard.board[6] === _position ||
+                gameBoard.board[1] === _position && gameBoard.board[7] === _position ||
+                gameBoard.board[3] === _position && gameBoard.board[5] === _position) _winner.mark = _position;
         }
         if (gameBoard.board[0] !== undefined) {
-            position = gameBoard.board[0];
-            if (gameBoard.board[1] === position && gameBoard.board[2] === position ||
-                gameBoard.board[3] === position && gameBoard.board[6] === position) winner = position;
+            _position = gameBoard.board[0];
+            if (gameBoard.board[1] === _position && gameBoard.board[2] === _position ||
+                gameBoard.board[3] === _position && gameBoard.board[6] === _position) _winner.mark = _position;
         }
         if (gameBoard.board[8] !== undefined) {
-            position = gameBoard.board[8];
-            if (gameBoard.board[7] === position && gameBoard.board[6] === position ||
-                gameBoard.board[5] === position && gameBoard.board[2] === position) winner = position;
+            _position = gameBoard.board[8];
+            if (gameBoard.board[7] === _position && gameBoard.board[6] === _position ||
+                gameBoard.board[5] === _position && gameBoard.board[2] === _position) _winner.mark = _position;
         }
 
         // return winning player's name
-        if (winner === playerOne.mark) return playerOne.name
-        else if (winner === playerTwo.mark) return playerTwo.name;
+        if (_winner.mark === playerOne.mark) return playerOne.name
+        else if (_winner.mark === playerTwo.mark) return playerTwo.name;
         // return false by default
         return false;
     }
@@ -93,19 +103,30 @@ const gameLogic = (() => {
 
 const displayController = (() => {
 
-    // show winner and stop game
-    const announceWinner = (winner) => {
+    // show _winner and stop game
+    const announceWinner = (_winner) => {
         gameState = false;
-        const winnerPara = document.querySelector('#winner');
-        winnerPara.innerHTML = `Congrats ${winner}, you won!`;
-        console.log(winner);
+        if (_winner.includes('tie')) winnerPara.innerHTML = _winner
+        else winnerPara.innerHTML = `Congrats <span style="color: var(--green)">${_winner}</span>, you won!`;
+        againBtn.style.visibility = 'visible';
     }
 
     const toggleBoard = () => {
         // toggle between boards and set game status
     }
 
-    return {announceWinner};
+    const setColor = (mark) => {
+        return (mark === 'X') ? `<p style="color: var(--darkred)">${mark}</p>`
+        : `<p style="color: var(--darkblue)">${mark}</p>`;
+    }
+
+    const playAgain = (e) => {
+        againBtn.style.visibility = 'hidden';
+        winnerPara.innerHTML = '&nbsp;';
+        gameBoard.reset();
+    }
+
+    return {announceWinner, setColor, playAgain};
 })();
 
 
@@ -115,7 +136,7 @@ gameCells.forEach((cell, i) => {
     });
 });
 
-
+againBtn.addEventListener('click', displayController.playAgain);
 
 
 
