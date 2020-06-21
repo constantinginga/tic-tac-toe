@@ -10,10 +10,9 @@ let gameState = true;
 
 
 // TO-DO
-// change checkWinner algorithm to be based on line orientation (add orientation property to winner object)
-    // pass winner object into function that draws line (add line with css)
 // first show form, then after hitting play button, show board
 // two forms side by side: Name, mark;
+// autofocus on player name input;
 // add transition animations
 // make it responsive (both form and board)
 // change all instances of private variables with underscore
@@ -28,13 +27,16 @@ const gameBoard = (() => {
         // fill board array and html divs
         if (cell.innerHTML === '') {
             board[i] = gameLogic.makeTurn();
-            cell.innerHTML = displayController.setColor(board[i]);
+            cell.innerHTML = `<p style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`
         }
         let _winner = gameLogic.checkWinner();
         // if there's a _winner, declare the _winner
-        if (_winner) displayController.announceWinner(_winner)
+        if (_winner) {
+            displayController.announceWinner(_winner);
+            displayController.drawLine(_winner);
+        }
         // if the board is full, declared tie
-        else if (board.length === 9 && !board.includes(undefined)) displayController.announceWinner(`You tied.`);
+        else if (board.length === 9 && !board.includes(undefined)) displayController.announceWinner('');
     }
 
     // clear board array and html divs
@@ -71,31 +73,55 @@ const gameLogic = (() => {
     }
 
     const checkWinner = () => {
-        let _position, _winner = {};
+
+        let _position, winner = {};
         // check for the right pattern
-        if (gameBoard.board[4] !== undefined) {
+        if (!!gameBoard.board[4]) {
             _position = gameBoard.board[4];
-            if (gameBoard.board[0] === _position && gameBoard.board[8] === _position || 
-                gameBoard.board[2] === _position && gameBoard.board[6] === _position ||
-                gameBoard.board[1] === _position && gameBoard.board[7] === _position ||
-                gameBoard.board[3] === _position && gameBoard.board[5] === _position) _winner.mark = _position;
-        }
-        if (gameBoard.board[0] !== undefined) {
-            _position = gameBoard.board[0];
-            if (gameBoard.board[1] === _position && gameBoard.board[2] === _position ||
-                gameBoard.board[3] === _position && gameBoard.board[6] === _position) _winner.mark = _position;
-        }
-        if (gameBoard.board[8] !== undefined) {
-            _position = gameBoard.board[8];
-            if (gameBoard.board[7] === _position && gameBoard.board[6] === _position ||
-                gameBoard.board[5] === _position && gameBoard.board[2] === _position) _winner.mark = _position;
+            if (gameBoard.board[0] === _position && gameBoard.board[8] === _position) {
+                winner.mark = _position;
+                winner.orientation = `diagonal right`;
+            } else if (gameBoard.board[2] === _position && gameBoard.board[6] === _position) {
+                winner.mark = _position;
+                winner.orientation = `diagonal left`;
+            } else if (gameBoard.board[3] === _position && gameBoard.board[5] === _position) {
+                winner.mark = _position;
+                winner.orientation = `straight 180deg middle`;
+            } else if (gameBoard.board[1] === _position && gameBoard.board[7] === _position) {
+                winner.mark = _position;
+                winner.orientation = `straight 90deg middle`;
+            }
         }
 
-        // return winning player's name
-        if (_winner.mark === playerOne.mark) return playerOne.name
-        else if (_winner.mark === playerTwo.mark) return playerTwo.name;
-        // return false by default
-        return false;
+        if (!!gameBoard.board[0]) {
+            _position = gameBoard.board[0];
+            if (gameBoard.board[1] === _position && gameBoard.board[2] === _position) {
+                winner.mark = _position;
+                winner.orientation = `straight 360deg top`;
+            } else if (gameBoard.board[3] === _position && gameBoard.board[6] === _position) {
+                winner.mark = _position;
+                winner.orientation = `straight -90deg top`
+            }
+        }
+
+        if (!!gameBoard.board[8]) {
+            _position = gameBoard.board[8];
+            if (gameBoard.board[7] === _position && gameBoard.board[6] === _position) {
+                winner.mark = _position;
+                winner.orientation = `straight 180deg bottom`;
+            } else if (gameBoard.board[5] === _position && gameBoard.board[2] === _position) {
+                winner.mark = _position;
+                winner.orientation = `straight 90deg bottom`;
+            }
+        }
+
+        // if there's a winner, set winner name and return winner object
+        if (Object.keys(winner).length !== 0) {
+            if (winner.mark === playerOne.mark) winner.name = playerOne.name
+            else if (winner.mark === playerTwo.mark) winner.name = playerTwo.name;
+            return winner;
+            // return false by default
+        } else return false;
     }
     
     return {makeTurn, checkWinner};
@@ -103,11 +129,11 @@ const gameLogic = (() => {
 
 const displayController = (() => {
 
-    // show _winner and stop game
-    const announceWinner = (_winner) => {
+    // show winner and stop game
+    const announceWinner = (winner) => {
         gameState = false;
-        if (_winner.includes('tie')) winnerPara.innerHTML = _winner
-        else winnerPara.innerHTML = `Congrats <span style="color: var(--green)">${_winner}</span>, you won!`;
+        if (typeof winner === 'string') winnerPara.innerHTML = `You tied.`
+        else winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
         againBtn.style.visibility = 'visible';
     }
 
@@ -116,17 +142,34 @@ const displayController = (() => {
     }
 
     const setColor = (mark) => {
-        return (mark === 'X') ? `<p style="color: var(--darkred)">${mark}</p>`
-        : `<p style="color: var(--darkblue)">${mark}</p>`;
+        return (mark === 'X') ? `var(--darkred)` : `var(--green)`;
     }
 
+    const drawLine = (winner) => {
+        // set correct line orientation and color
+        let orientation = winner.orientation.split(' '), color = setColor(winner.mark),
+         direction = orientation[1], deg = `83.5%`;
+        if (orientation.includes('diagonal')) direction = `to top ${orientation[1]}`;
+        if (orientation.includes('diagonal') || orientation.includes('middle')) deg = `50%`;
+
+        // draw the line
+        gameGrid.style.background = `linear-gradient(${direction},
+            rgba(0,0,0,0) 0%,
+            rgba(0,0,0,0) calc(${deg} - .2rem),
+            ${color} 50%,
+            rgba(0,0,0,0) calc(${deg} + .2rem),
+            rgba(0,0,0,0) 100%)`;
+    }
+
+    // play another round
     const playAgain = (e) => {
         againBtn.style.visibility = 'hidden';
         winnerPara.innerHTML = '&nbsp;';
+        gameGrid.style.background = '';
         gameBoard.reset();
     }
 
-    return {announceWinner, setColor, playAgain};
+    return {announceWinner, setColor, playAgain, drawLine};
 })();
 
 
