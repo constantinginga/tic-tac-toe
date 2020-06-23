@@ -11,8 +11,7 @@ let gameState = true;
 
 // TO-DO
 // first show form, then after hitting play button, show board
-// two forms side by side: Name, mark;
-// autofocus on player name input;
+// autofocus on player name input
 // add transition animations
 // make it responsive (both form and board)
 // change all instances of private variables with underscore
@@ -137,6 +136,39 @@ const displayController = (() => {
         againBtn.style.visibility = 'visible';
     }
 
+    // switch between player and bot
+    const switchPlayer = () => {
+
+        const leftArrows = document.querySelectorAll('.left'),
+            rightArrows = document.querySelectorAll('.right'),
+            botImg = document.querySelectorAll('.bot-img'),
+            playerImg = document.querySelectorAll('.player-img');
+
+        // swap between bot img and user img
+        const _swapImgs = (img, i) => {
+            if (img === 'bot') {
+                playerImg[i].style.display = 'none';
+                botImg[i].style.display = 'block';
+            } else if (img === 'user') {
+                playerImg[i].style.display = 'block';
+                botImg[i].style.display = 'none';
+            }
+        }
+        
+        // hide clicked arrow, show the other one and show the correct img
+        const _swapArrows = (current, i, other, img) => {
+            current.addEventListener('click', e => {
+                current.style.visibility = 'hidden';
+                other[i].style.visibility = 'visible';
+                _swapImgs(img, i);
+            });
+        }
+
+        // add event listener to all arrows
+        rightArrows.forEach((arrow, i) => _swapArrows(arrow, i, leftArrows, 'bot'));
+        leftArrows.forEach((arrow, i) => _swapArrows(arrow, i, rightArrows, 'user'));
+    }
+
     const toggleBoard = () => {
         // toggle between boards and set game status
     }
@@ -169,7 +201,7 @@ const displayController = (() => {
         gameBoard.reset();
     }
 
-    return {announceWinner, setColor, playAgain, drawLine};
+    return {announceWinner, setColor, playAgain, drawLine, switchPlayer};
 })();
 
 
@@ -180,6 +212,7 @@ gameCells.forEach((cell, i) => {
 });
 
 againBtn.addEventListener('click', displayController.playAgain);
+displayController.switchPlayer();
 
 
 
