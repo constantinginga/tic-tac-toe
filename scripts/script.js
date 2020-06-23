@@ -1,21 +1,11 @@
-const gameContainer = document.querySelector('#game-container'), 
-    gameGrid = document.querySelector('#game-grid'),
-    gameCells = document.querySelectorAll('.game-cell'),
-    winnerPara = document.querySelector('#winner'),
-    againBtn = document.querySelector('#again');
-
-let gameState = true;
-
-
-
-
 // TO-DO
-// first show form, then after hitting play button, show board
-// autofocus on player name input
-// add transition animations
-// make it responsive (both form and board)
-// change all instances of private variables with underscore
-// set gamestate to true when user clicks play (reset the temp value of true above)
+// customize welcome text (add scribble or change font)
+// add transition animations (between player and bot etc.)
+
+const playerFactory = (name, mark, isActive) => {
+    return {name, mark, isActive};
+}
+
 
 
 const gameBoard = (() => {
@@ -24,116 +14,141 @@ const gameBoard = (() => {
 
     const update = (cell, i) => {
         // fill board array and html divs
-        if (cell.innerHTML === '') {
-            board[i] = gameLogic.makeTurn();
-            cell.innerHTML = `<p style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`
+        if (gameLogic.gameState) {
+            if (cell.innerHTML === '') {
+                board[i] = gameLogic.makeTurn();
+                cell.innerHTML = `<p style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`
+            }
+            let winner = gameLogic.checkWinner();
+            // if there's a _winner, declare the _winner
+            if (winner) {
+                displayController.announceWinner(winner);
+                displayController.drawLine(winner);
+            }
+            // if the board is full, declared tie
+            else if (board.length === 9 && !board.includes(undefined)) displayController.announceWinner('');
         }
-        let _winner = gameLogic.checkWinner();
-        // if there's a _winner, declare the _winner
-        if (_winner) {
-            displayController.announceWinner(_winner);
-            displayController.drawLine(_winner);
-        }
-        // if the board is full, declared tie
-        else if (board.length === 9 && !board.includes(undefined)) displayController.announceWinner('');
     }
 
-    // clear board array and html divs
+    // clear board array
     const reset = () => {
         board.length = 0;
-        gameCells.forEach(cell => cell.innerHTML = '');
-        gameState = true;
+        gameLogic.gameState = true;
     }
 
     return {board, update, reset};
 })();
 
 
-const playerFactory = (name, mark, isActive) => {
-    return {name, mark, isActive};
-}
-
-let playerOne = playerFactory('jeff', 'X', true);
-let playerTwo = playerFactory('john', 'O', false);
-
 
 const gameLogic = (() => {
 
+    const _playBtn = document.querySelector('#play');
+    let _playerOne = playerFactory('', 'X', true),
+        _playerTwo = playerFactory('', 'O', false),
+        gameState;
+
+    const createPlayers = () => {
+        const playerOneInput = document.querySelector('#player1'),
+            playerTwoInput = document.querySelector('#player2');
+            // set default name
+            _playerOne.name = playerOneInput.placeholder;
+            _playerTwo.name = playerTwoInput.placeholder;
+            // if user provided another name, change it
+            if (playerOneInput.value) _playerOne.name = playerOneInput.value;
+            if (playerTwoInput.value) _playerTwo.name = playerTwoInput.value;
+    }
+
     const makeTurn = () => {
-        if (playerOne.isActive) {
-            playerOne.isActive = false;
-            playerTwo.isActive = true;
-            return playerOne.mark;
-        } else if (playerTwo.isActive) {
-            playerTwo.isActive = false;
-            playerOne.isActive = true;
-            return playerTwo.mark;
+        if (_playerOne.isActive) {
+            _playerOne.isActive = false;
+            _playerTwo.isActive = true;
+            return _playerOne.mark;
+        } else if (_playerTwo.isActive) {
+            _playerTwo.isActive = false;
+            _playerOne.isActive = true;
+            return _playerTwo.mark;
         }
     }
 
     const checkWinner = () => {
 
-        let _position, winner = {};
+        let position, winner = {};
         // check for the right pattern
         if (!!gameBoard.board[4]) {
-            _position = gameBoard.board[4];
-            if (gameBoard.board[0] === _position && gameBoard.board[8] === _position) {
-                winner.mark = _position;
+            position = gameBoard.board[4];
+            if (gameBoard.board[0] === position && gameBoard.board[8] === position) {
+                winner.mark = position;
                 winner.orientation = `diagonal right`;
-            } else if (gameBoard.board[2] === _position && gameBoard.board[6] === _position) {
-                winner.mark = _position;
+            } else if (gameBoard.board[2] === position && gameBoard.board[6] === position) {
+                winner.mark = position;
                 winner.orientation = `diagonal left`;
-            } else if (gameBoard.board[3] === _position && gameBoard.board[5] === _position) {
-                winner.mark = _position;
+            } else if (gameBoard.board[3] === position && gameBoard.board[5] === position) {
+                winner.mark = position;
                 winner.orientation = `straight 180deg middle`;
-            } else if (gameBoard.board[1] === _position && gameBoard.board[7] === _position) {
-                winner.mark = _position;
+            } else if (gameBoard.board[1] === position && gameBoard.board[7] === position) {
+                winner.mark = position;
                 winner.orientation = `straight 90deg middle`;
             }
         }
 
         if (!!gameBoard.board[0]) {
-            _position = gameBoard.board[0];
-            if (gameBoard.board[1] === _position && gameBoard.board[2] === _position) {
-                winner.mark = _position;
+            position = gameBoard.board[0];
+            if (gameBoard.board[1] === position && gameBoard.board[2] === position) {
+                winner.mark = position;
                 winner.orientation = `straight 360deg top`;
-            } else if (gameBoard.board[3] === _position && gameBoard.board[6] === _position) {
-                winner.mark = _position;
+            } else if (gameBoard.board[3] === position && gameBoard.board[6] === position) {
+                winner.mark = position;
                 winner.orientation = `straight -90deg top`
             }
         }
 
         if (!!gameBoard.board[8]) {
-            _position = gameBoard.board[8];
-            if (gameBoard.board[7] === _position && gameBoard.board[6] === _position) {
-                winner.mark = _position;
+            position = gameBoard.board[8];
+            if (gameBoard.board[7] === position && gameBoard.board[6] === position) {
+                winner.mark = position;
                 winner.orientation = `straight 180deg bottom`;
-            } else if (gameBoard.board[5] === _position && gameBoard.board[2] === _position) {
-                winner.mark = _position;
+            } else if (gameBoard.board[5] === position && gameBoard.board[2] === position) {
+                winner.mark = position;
                 winner.orientation = `straight 90deg bottom`;
             }
         }
 
         // if there's a winner, set winner name and return winner object
         if (Object.keys(winner).length !== 0) {
-            if (winner.mark === playerOne.mark) winner.name = playerOne.name
-            else if (winner.mark === playerTwo.mark) winner.name = playerTwo.name;
+            if (winner.mark === _playerOne.mark) winner.name = _playerOne.name
+            else if (winner.mark === _playerTwo.mark) winner.name = _playerTwo.name;
             return winner;
             // return false by default
         } else return false;
     }
+
+    const beginGame = () => {
+        _playBtn.addEventListener('click', e => {
+            gameLogic.gameState = true;
+            createPlayers();
+            displayController.showBoard();
+        });
+    }
     
-    return {makeTurn, checkWinner};
+    return {gameState, createPlayers, makeTurn, checkWinner, beginGame};
 })();
+
+
 
 const displayController = (() => {
 
+    const _gameGrid = document.querySelector('#game-grid'),
+        _winnerPara = document.querySelector('#winner'),
+        _againBtn = document.querySelector('#again'),
+        _gameCells = document.querySelectorAll('.game-cell');
+
     // show winner and stop game
     const announceWinner = (winner) => {
-        gameState = false;
-        if (typeof winner === 'string') winnerPara.innerHTML = `You tied.`
-        else winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
-        againBtn.style.visibility = 'visible';
+        gameLogic.gameState = false;
+        if (typeof winner === 'string') _winnerPara.innerHTML = `You tied.`
+        else _winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
+        _againBtn.style.visibility = 'visible';
     }
 
     // switch between player and bot
@@ -145,7 +160,7 @@ const displayController = (() => {
             playerImg = document.querySelectorAll('.player-img');
 
         // swap between bot img and user img
-        const _swapImgs = (img, i) => {
+        const swapImgs = (img, i) => {
             if (img === 'bot') {
                 playerImg[i].style.display = 'none';
                 botImg[i].style.display = 'block';
@@ -156,21 +171,25 @@ const displayController = (() => {
         }
         
         // hide clicked arrow, show the other one and show the correct img
-        const _swapArrows = (current, i, other, img) => {
+        const swapArrows = (current, i, other, img) => {
             current.addEventListener('click', e => {
                 current.style.visibility = 'hidden';
                 other[i].style.visibility = 'visible';
-                _swapImgs(img, i);
+                swapImgs(img, i);
             });
         }
 
         // add event listener to all arrows
-        rightArrows.forEach((arrow, i) => _swapArrows(arrow, i, leftArrows, 'bot'));
-        leftArrows.forEach((arrow, i) => _swapArrows(arrow, i, rightArrows, 'user'));
+        rightArrows.forEach((arrow, i) => swapArrows(arrow, i, leftArrows, 'bot'));
+        leftArrows.forEach((arrow, i) => swapArrows(arrow, i, rightArrows, 'user'));
     }
 
-    const toggleBoard = () => {
-        // toggle between boards and set game status
+    const showBoard = () => {
+        // show board, hide form and enable 'play again' functionality
+        document.querySelector('#select-container').style.display = 'none';
+        document.querySelector('#game-container').style.display = 'block';
+        _againBtn.addEventListener('click', displayController.playAgain);
+        _gameCells.forEach((cell, i) => cell.addEventListener('click', e => gameBoard.update(cell, i)));
     }
 
     const setColor = (mark) => {
@@ -185,7 +204,7 @@ const displayController = (() => {
         if (orientation.includes('diagonal') || orientation.includes('middle')) deg = `50%`;
 
         // draw the line
-        gameGrid.style.background = `linear-gradient(${direction},
+        _gameGrid.style.background = `linear-gradient(${direction},
             rgba(0,0,0,0) 0%,
             rgba(0,0,0,0) calc(${deg} - .2rem),
             ${color} 50%,
@@ -195,25 +214,16 @@ const displayController = (() => {
 
     // play another round
     const playAgain = (e) => {
-        againBtn.style.visibility = 'hidden';
-        winnerPara.innerHTML = '&nbsp;';
-        gameGrid.style.background = '';
+        _againBtn.style.visibility = 'hidden';
+        _winnerPara.innerHTML = '&nbsp;';
+        _gameGrid.style.background = '';
+        _gameCells.forEach(cell => cell.innerHTML = '');
         gameBoard.reset();
     }
 
-    return {announceWinner, setColor, playAgain, drawLine, switchPlayer};
+    return {announceWinner, switchPlayer, showBoard, setColor, drawLine, playAgain};
 })();
 
 
-gameCells.forEach((cell, i) => {
-    cell.addEventListener('click', e => {
-        if (gameState) gameBoard.update(cell, i);
-    });
-});
-
-againBtn.addEventListener('click', displayController.playAgain);
 displayController.switchPlayer();
-
-
-
-
+gameLogic.beginGame();
