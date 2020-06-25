@@ -1,5 +1,4 @@
 // TO-DO
-// customize welcome text (add scribble or change font)
 // add transition animations (between player and bot etc.)
 
 const playerFactory = (name, mark, isActive) => {
@@ -143,12 +142,24 @@ const displayController = (() => {
         _againBtn = document.querySelector('#again'),
         _gameCells = document.querySelectorAll('.game-cell');
 
+    let _title =  document.querySelector('#title');
+
+    function _toggleAnim(anim, element) {
+        for (i = 1; i < arguments.length; i++) {
+            if (arguments[i].style.display === 'block' || arguments[i].style.visibility === 'visible')
+                arguments[i].classList.add('animate__animated', `animate__${anim}`);
+            else arguments[i].classList.remove('animate__animated', `animate__${anim}`);
+        }
+    }
+
     // show winner and stop game
     const announceWinner = (winner) => {
         gameLogic.gameState = false;
+        _winnerPara.style.visibility = 'visible';
         if (typeof winner === 'string') _winnerPara.innerHTML = `You tied.`
         else _winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
         _againBtn.style.visibility = 'visible';
+        _toggleAnim('fadeIn', _winnerPara, _againBtn);
     }
 
     // switch between player and bot
@@ -164,9 +175,11 @@ const displayController = (() => {
             if (img === 'bot') {
                 playerImg[i].style.display = 'none';
                 botImg[i].style.display = 'block';
+                _toggleAnim('slideInRight', botImg[i]);
             } else if (img === 'user') {
                 playerImg[i].style.display = 'block';
                 botImg[i].style.display = 'none';
+                _toggleAnim('slideInLeft', playerImg[i]);
             }
         }
         
@@ -175,6 +188,7 @@ const displayController = (() => {
             current.addEventListener('click', e => {
                 current.style.visibility = 'hidden';
                 other[i].style.visibility = 'visible';
+                _toggleAnim('fadeIn', other[i], current);
                 swapImgs(img, i);
             });
         }
@@ -186,8 +200,10 @@ const displayController = (() => {
 
     const showBoard = () => {
         // show board, hide form and enable 'play again' functionality
+        const gameContainer = document.querySelector('#game-container');
         document.querySelector('#select-container').style.display = 'none';
-        document.querySelector('#game-container').style.display = 'block';
+        gameContainer.style.display = 'block';
+        _toggleAnim('fadeIn', gameContainer);
         _againBtn.addEventListener('click', displayController.playAgain);
         _gameCells.forEach((cell, i) => cell.addEventListener('click', e => gameBoard.update(cell, i)));
     }
@@ -215,15 +231,40 @@ const displayController = (() => {
     // play another round
     const playAgain = (e) => {
         _againBtn.style.visibility = 'hidden';
+        _winnerPara.style.visibility = 'hidden';
         _winnerPara.innerHTML = '&nbsp;';
+        _toggleAnim('fadeIn', _winnerPara, _againBtn);
         _gameGrid.style.background = '';
         _gameCells.forEach(cell => cell.innerHTML = '');
         gameBoard.reset();
     }
 
-    return {announceWinner, switchPlayer, showBoard, setColor, drawLine, playAgain};
+    // choose between provided colors randomly
+    const _chooseColor = () => {
+        switch (Math.floor(Math.random() * Math.floor(3))) {
+            case 0:
+                return 'var(--darkred)';
+            case 1:
+                return 'var(--green)';
+            case 2:
+                return 'var(--darkblue)';
+        }
+    }
+
+    // change color of each letter
+    const randomizeTitleColor = () => {
+        let titleArray = _title.innerHTML.split("");
+        for (let i = 0; i < titleArray.length; i++) {
+            titleArray[i] = `<span style="color: ${_chooseColor()}">${titleArray[i]}</span>`;
+        }
+        _title.innerHTML = titleArray.join("");
+    }
+
+    return {announceWinner, switchPlayer, showBoard, setColor, drawLine, playAgain, randomizeTitleColor};
 })();
 
 
+
+displayController.randomizeTitleColor();
 displayController.switchPlayer();
 gameLogic.beginGame();

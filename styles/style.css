@@ -27,8 +27,10 @@ body {
     margin: 5rem 2rem 5rem 2rem;
 }
 
-#welcome {
-    font-size: 8rem;
+#title {
+    user-select: none;
+    font-family: 'Gloria Hallelujah', cursive;
+    font-size: 7rem;
     text-align: center;
 }
 
