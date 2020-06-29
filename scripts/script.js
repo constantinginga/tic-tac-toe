@@ -1,5 +1,10 @@
 // TO-DO
-// add transition animations (between player and bot etc.)
+// Implement bot feature
+    // Get the computer to make a random legal move
+    // Implement minimax algorithm
+    // change winner message when bot wins
+    // clean up code and add comments
+
 
 const playerFactory = (name, mark, isActive) => {
     return {name, mark, isActive};
@@ -16,14 +21,10 @@ const gameBoard = (() => {
         if (gameLogic.gameState) {
             if (cell.innerHTML === '') {
                 board[i] = gameLogic.makeTurn();
-                cell.innerHTML = `<p style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`
+                cell.innerHTML = `<p class="fd" style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`;
             }
             let winner = gameLogic.checkWinner();
-            // if there's a _winner, declare the _winner
-            if (winner) {
-                displayController.announceWinner(winner);
-                displayController.drawLine(winner);
-            }
+            if (winner) displayController.announceWinner(winner)
             // if the board is full, declared tie
             else if (board.length === 9 && !board.includes(undefined)) displayController.announceWinner('');
         }
@@ -47,7 +48,7 @@ const gameLogic = (() => {
         _playerTwo = playerFactory('', 'O', false),
         gameState;
 
-    const createPlayers = () => {
+    const _createPlayers = () => {
         const playerOneInput = document.querySelector('#player1'),
             playerTwoInput = document.querySelector('#player2');
             // set default name
@@ -73,6 +74,7 @@ const gameLogic = (() => {
     const checkWinner = () => {
 
         let position, winner = {};
+
         // check for the right pattern
         if (!!gameBoard.board[4]) {
             position = gameBoard.board[4];
@@ -125,41 +127,53 @@ const gameLogic = (() => {
     const beginGame = () => {
         _playBtn.addEventListener('click', e => {
             gameLogic.gameState = true;
-            createPlayers();
+            _createPlayers();
             displayController.showBoard();
         });
     }
     
-    return {gameState, createPlayers, makeTurn, checkWinner, beginGame};
+    return {gameState, makeTurn, checkWinner, beginGame};
 })();
 
 
 
 const displayController = (() => {
 
-    const _gameGrid = document.querySelector('#game-grid'),
+    const _winnerLine = document.querySelector('#winner-line'),
         _winnerPara = document.querySelector('#winner'),
         _againBtn = document.querySelector('#again'),
         _gameCells = document.querySelectorAll('.game-cell');
-
     let _title =  document.querySelector('#title');
 
-    function _toggleAnim(anim, element) {
-        for (i = 1; i < arguments.length; i++) {
-            if (arguments[i].style.display === 'block' || arguments[i].style.visibility === 'visible')
-                arguments[i].classList.add('animate__animated', `animate__${anim}`);
+    function _toggleAnim(toggle, anim, element) {
+        // starting from 3rd argument, add/remove class
+        for (i = 2; i < arguments.length; i++) {
+            if (toggle === 'add')
+            arguments[i].classList.add('animate__animated', `animate__${anim}`);
             else arguments[i].classList.remove('animate__animated', `animate__${anim}`);
         }
+    }
+
+    function _hideWinner() {
+        _againBtn.style.visibility = 'hidden';
+        _winnerPara.style.visibility = 'hidden';
+        _winnerPara.innerHTML = '&nbsp;';
     }
 
     // show winner and stop game
     const announceWinner = (winner) => {
         gameLogic.gameState = false;
         _winnerPara.style.visibility = 'visible';
-        if (typeof winner === 'string') _winnerPara.innerHTML = `You tied.`
-        else _winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
         _againBtn.style.visibility = 'visible';
-        _toggleAnim('fadeIn', _winnerPara, _againBtn);
+        if (typeof winner === 'string') {
+            _winnerPara.innerHTML = `You tied.`;
+        } else {
+            _winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
+            displayController.drawLine(winner);
+        }
+        _toggleAnim('remove', 'fadeOut', _winnerPara, _againBtn, _winnerLine);
+        _againBtn.removeEventListener('animationend', _hideWinner);
+        _toggleAnim('add', 'fadeIn', _winnerPara, _againBtn, _winnerLine);
     }
 
     // switch between player and bot
@@ -167,29 +181,47 @@ const displayController = (() => {
 
         const leftArrows = document.querySelectorAll('.left'),
             rightArrows = document.querySelectorAll('.right'),
+            imgs = document.querySelectorAll('.imgs'),
+            player = document.querySelectorAll('.player'),
             botImg = document.querySelectorAll('.bot-img'),
-            playerImg = document.querySelectorAll('.player-img');
+            playerImg = document.querySelectorAll('.player-img'),
+            playerNames = document.querySelectorAll('.player-name');
 
-        // swap between bot img and user img
-        const swapImgs = (img, i) => {
+            // create text input for bot
+            let botNames = [];
+            for (let i = 0; i < playerNames.length; i++) {
+                botNames[i] = playerNames[i].cloneNode();
+                botNames[i].value = `Unstoppable AI`;
+                botNames[i].classList.add('bot');
+                botNames[i].style.borderColor = 'transparent';
+                botNames[i].disabled = true;
+                // add animations to all elements
+                _toggleAnim('add', 'fadeIn', botNames[i], playerNames[i]);
+                _toggleAnim('add', 'slideInRight', botImg[i]);
+            }
+
+        // swap between bot img/input and player img/input
+        const swapImgAndInput = (img, i) => {
             if (img === 'bot') {
                 playerImg[i].style.display = 'none';
                 botImg[i].style.display = 'block';
-                _toggleAnim('slideInRight', botImg[i]);
+                playerNames[i].replaceWith(botNames[i]);
             } else if (img === 'user') {
+                _toggleAnim('add', 'slideInLeft', playerImg[i]);
                 playerImg[i].style.display = 'block';
                 botImg[i].style.display = 'none';
-                _toggleAnim('slideInLeft', playerImg[i]);
+                botNames[i].replaceWith(playerNames[i]);
             }
         }
         
-        // hide clicked arrow, show the other one and show the correct img
+        // hide clicked arrow, show the other one and show the correct img/input
         const swapArrows = (current, i, other, img) => {
             current.addEventListener('click', e => {
                 current.style.visibility = 'hidden';
                 other[i].style.visibility = 'visible';
-                _toggleAnim('fadeIn', other[i], current);
-                swapImgs(img, i);
+                _toggleAnim('add', 'fadeIn', other[i]);
+                _toggleAnim('remove', 'fadeIn', current);
+                swapImgAndInput(img, i);
             });
         }
 
@@ -203,11 +235,12 @@ const displayController = (() => {
         const gameContainer = document.querySelector('#game-container');
         document.querySelector('#select-container').style.display = 'none';
         gameContainer.style.display = 'block';
-        _toggleAnim('fadeIn', gameContainer);
+        _toggleAnim('add', 'fadeIn', gameContainer);
         _againBtn.addEventListener('click', displayController.playAgain);
         _gameCells.forEach((cell, i) => cell.addEventListener('click', e => gameBoard.update(cell, i)));
     }
 
+    // return the correct color
     const setColor = (mark) => {
         return (mark === 'X') ? `var(--darkred)` : `var(--green)`;
     }
@@ -215,12 +248,12 @@ const displayController = (() => {
     const drawLine = (winner) => {
         // set correct line orientation and color
         let orientation = winner.orientation.split(' '), color = setColor(winner.mark),
-         direction = orientation[1], deg = `83.5%`;
+         direction = orientation[1], deg = `86.5%`;
         if (orientation.includes('diagonal')) direction = `to top ${orientation[1]}`;
         if (orientation.includes('diagonal') || orientation.includes('middle')) deg = `50%`;
 
         // draw the line
-        _gameGrid.style.background = `linear-gradient(${direction},
+        _winnerLine.style.background = `linear-gradient(${direction},
             rgba(0,0,0,0) 0%,
             rgba(0,0,0,0) calc(${deg} - .2rem),
             ${color} 50%,
@@ -230,12 +263,22 @@ const displayController = (() => {
 
     // play another round
     const playAgain = (e) => {
-        _againBtn.style.visibility = 'hidden';
-        _winnerPara.style.visibility = 'hidden';
-        _winnerPara.innerHTML = '&nbsp;';
-        _toggleAnim('fadeIn', _winnerPara, _againBtn);
-        _gameGrid.style.background = '';
-        _gameCells.forEach(cell => cell.innerHTML = '');
+        // fade out animation to button and winner text
+        _toggleAnim('remove', 'fadeIn', _winnerPara, _againBtn);
+        _toggleAnim('add', 'fadeOut', _againBtn, _winnerPara, _winnerLine);
+        _againBtn.addEventListener('animationend', _hideWinner);
+        _winnerLine.style.background = '';
+        _gameCells.forEach(cell => {
+            // select mark
+            let cellContent = cell.childNodes[0];
+            // if there's a mark in that cell, add animation, then clear
+            if (!!cellContent) {
+                cellContent.classList.remove('fd');
+                _toggleAnim('add', 'fadeOut', cellContent);
+                cellContent.addEventListener('animationend', () => cell.innerHTML = '');
+                // if it's empty, just clear it
+            } else cell.innerHTML = '';
+        });
         gameBoard.reset();
     }
 

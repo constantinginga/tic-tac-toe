@@ -13,7 +13,7 @@
         <p id="title">Good luck!</p>
         <div id="form">
             <div class="player">
-                <input type="text" name="name" id="player1" placeholder="Player 1">
+                <input type="text" name="name" class="player-name" id="player1" placeholder="Player 1">
                 <div class="imgs">
                     <img src="images/left-arrow.png" alt="left arrow" class="left">
                     <img src="images/bot.png" class="bot-img">
@@ -23,7 +23,7 @@
             </div>
             <p id="versus">VS</p>
             <div class="player">
-                <input type="text" name="name" id="player2" placeholder="Player 2">
+                <input type="text" name="name" class="player-name" id="player2" placeholder="Player 2">
                 <div class="imgs">
                     <img src="images/left-arrow.png" alt="left arrow" class="left">
                     <img src="images/bot.png" class="bot-img">
@@ -37,6 +37,7 @@
     <div id="game-container">
         <p id="winner">&nbsp;</p>
         <button class="btn" id="again" type="button">Play Again</button>
+        <div id="winner-line"></div>
         <div id="game-grid">
             <div class="game-cell"></div>
             <div class="game-cell"></div>

@@ -23,6 +23,10 @@ body {
     color: var(--darkblue);
 }
 
+.animate__animated.animate__fadeOut {
+    --animate-duration: .5s;
+}
+
 #select-container {
     margin: 5rem 2rem 5rem 2rem;
 }
@@ -41,7 +45,6 @@ body {
 }
 
 #play {
-    visibility: visible;
     margin: 0 auto;
 }
 
@@ -52,7 +55,7 @@ body {
     margin: 0 7rem;
 }
 
-#player1, #player2 {
+.player-name {
     font-family: 'Gochi Hand', cursive;
     font-size: 2.5rem;
     letter-spacing: .05rem;
@@ -65,7 +68,7 @@ body {
     text-align: center;
 }
 
-#player1::placeholder, #player2::placeholder {
+.player-name::placeholder {
     text-align: center;
     opacity: 0.5;
 }
@@ -114,6 +117,16 @@ body {
     text-align: center;
 }
 
+#winner-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    width: 45rem;
+    height: 45rem;
+    margin: 4rem auto;
+}
+
 #game-grid {
     user-select: none;
     width: 50rem;
@@ -144,8 +157,11 @@ body {
     border-right: var(--gameborder);
 }
 
-.btn {
+#again {
     visibility: hidden;
+}
+
+.btn {
     font-family: 'Gochi Hand', cursive;
     font-size: 2.5rem;
     letter-spacing: .05rem;
@@ -183,4 +199,17 @@ body {
     html, body {
         font-size: 9px;
     }
+}
+
+@keyframes fd {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.fd {
+    animation: fd .3s;
 }
