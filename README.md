@@ -1,6 +1,6 @@
 # tic-tac-toe
 
-*AI Bot - W.I.P*\
+*WORK IN PROGRESS: AI Bot*\
 *First (relatively) big project using Factory Functions and the Module Pattern.*\
 [Try it out!](https://constantinginga.github.io/tic-tac-toe/)
 
