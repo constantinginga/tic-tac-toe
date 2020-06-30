@@ -6,8 +6,8 @@
     // clean up code and add comments
 
 
-const playerFactory = (name, mark, isActive) => {
-    return {name, mark, isActive};
+const playerFactory = (name, mark, isActive, isBot) => {
+    return {name, mark, isActive, isBot};
 }
 
 
@@ -19,7 +19,7 @@ const gameBoard = (() => {
     const update = (cell, i) => {
         // fill board array and html divs
         if (gameLogic.gameState) {
-            if (cell.innerHTML === '') {
+            if (board[i] === undefined) {
                 board[i] = gameLogic.makeTurn();
                 cell.innerHTML = `<p class="fd" style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`;
             }
@@ -43,7 +43,8 @@ const gameBoard = (() => {
 
 const gameLogic = (() => {
 
-    const _playBtn = document.querySelector('#play');
+    const _playBtn = document.querySelector('#play'),
+        _gameCells = document.querySelectorAll('.game-cell');
     let _playerOne = playerFactory('', 'X', true),
         _playerTwo = playerFactory('', 'O', false),
         gameState;
@@ -57,6 +58,8 @@ const gameLogic = (() => {
             // if user provided another name, change it
             if (playerOneInput.value) _playerOne.name = playerOneInput.value;
             if (playerTwoInput.value) _playerTwo.name = playerTwoInput.value;
+            (playerOneInput.classList.contains('bot')) ? _playerOne.isBot = true : _playerOne.isBot = false;
+            (playerTwoInput.classList.contains('bot')) ? _playerTwo.isBot = true : _playerTwo.isBot = false;
     }
 
     const makeTurn = () => {
@@ -69,6 +72,13 @@ const gameLogic = (() => {
             _playerOne.isActive = true;
             return _playerTwo.mark;
         }
+    }
+    
+    const _initBot = () => {
+        _gameCells.forEach((cell, i) => {
+            if (_playerOne.isBot && _playerOne.isActive || _playerTwo.isBot && _playerTwo.isActive)
+            gameBoard.update(cell, i);
+        });
     }
 
     const checkWinner = () => {
@@ -128,7 +138,12 @@ const gameLogic = (() => {
         _playBtn.addEventListener('click', e => {
             gameLogic.gameState = true;
             _createPlayers();
+            // if there's at least one player, enable board placing
+            if (!_playerOne.isBot || !_playerTwo.isBot) {
+                _gameCells.forEach((cell, i) => cell.addEventListener('click', e => gameBoard.update(cell, i)));
+            }
             displayController.showBoard();
+            if (_playerOne.isBot || _playerTwo.isBot) setInterval(_initBot, 500);
         });
     }
     
@@ -145,12 +160,12 @@ const displayController = (() => {
         _gameCells = document.querySelectorAll('.game-cell');
     let _title =  document.querySelector('#title');
 
-    function _toggleAnim(toggle, anim, element) {
-        // starting from 3rd argument, add/remove class
+    function _toggleAnim(toggle, animation, element) {
+        // remove/add animation to elements
+        const anim = ['animate__animated', `animate__${animation}`];
         for (i = 2; i < arguments.length; i++) {
-            if (toggle === 'add')
-            arguments[i].classList.add('animate__animated', `animate__${anim}`);
-            else arguments[i].classList.remove('animate__animated', `animate__${anim}`);
+            if (toggle === 'add') arguments[i].classList.add(anim[0], anim[1]);
+            else arguments[i].classList.remove(anim[0], anim[1]);
         }
     }
 
@@ -237,7 +252,6 @@ const displayController = (() => {
         gameContainer.style.display = 'block';
         _toggleAnim('add', 'fadeIn', gameContainer);
         _againBtn.addEventListener('click', displayController.playAgain);
-        _gameCells.forEach((cell, i) => cell.addEventListener('click', e => gameBoard.update(cell, i)));
     }
 
     // return the correct color
