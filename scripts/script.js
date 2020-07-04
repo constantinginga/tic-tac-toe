@@ -1,16 +1,3 @@
-// TO-DO
-// add timer after bot's move
-// remove cell parameter from update function?
-// handle situation when there are two bots and when the bot has the first move (inside _game function)
-
-
-// Implement bot feature
-    // Get the computer to make a random legal move
-    // Implement minimax algorithm
-    // change winner message when bot wins
-    // clean up code and add comments
-
-
 const playerFactory = (name, mark, isActive, isBot) => {
     return {name, mark, isActive, isBot};
 }
@@ -19,12 +6,12 @@ const playerFactory = (name, mark, isActive, isBot) => {
 
 const gameBoard = (() => {
     
+    // initialize board
     const board = [];
-    let current;
     board.length = 9;
 
-    // fill board array and html divs
-    const update = (cell, i) => {
+    const update = (i) => {
+        // if game is running and the spot is available
         if (gameLogic.gameState && board[i] === undefined) {
 
             // if the game contains a bot
@@ -32,30 +19,34 @@ const gameBoard = (() => {
                 // make player's move
                 gameLogic.makeTurn(i, gameLogic.aiMode.player);
                 // if player hasn't won, make bot move
-                if (!gameLogic.checkPattern())
-                gameLogic.makeTurn(gameLogic.bestSpot(), gameLogic.aiMode.bot);
+                if (!gameLogic.checkWinner(gameLogic.checkPattern())) {
+                    setTimeout(() => gameLogic.makeTurn(gameLogic.bestSpot(), gameLogic.aiMode.bot), 300);
+                }
                 // check for pattern again after bot's move
-                gameLogic.checkWinner(gameLogic.checkPattern());
+                setTimeout(() => gameLogic.checkWinner(gameLogic.checkPattern()), 300);
             
             // if the game contains two players
             } else {
-                current = gameLogic.setActivePlayer();
+                let current = gameLogic.setActivePlayer();
                 gameLogic.makeTurn(i, current);
                 gameLogic.checkWinner(gameLogic.checkPattern());
             }
         }
     }
 
+    // reset game
     const reset = () => {
         gameLogic.gameState = true;
         // clear board array
         for (let i = 0; i < board.length; i++) {
             board[i] = undefined;
         }
-        // if the game has two players, set active player to 'X'
-        if (Object.keys(gameLogic.aiMode).length === 0) gameLogic.setActivePlayer();
+
         // if the bot is 'X', make first turn
-        else if (gameLogic.aiMode.bot.mark === 'X') gameLogic.makeTurn(gameLogic.bestSpot(), gameLogic.aiMode.bot);
+        if (Object.keys(gameLogic.aiMode).length === 2 && gameLogic.aiMode.bot.mark === 'X')
+            setTimeout(() => gameLogic.makeTurn(gameLogic.bestSpot(), gameLogic.aiMode.bot), 300);
+        // if the game contains two bots
+        else if (Object.keys(gameLogic.aiMode).length === 1) gameLogic.botGame();
     }
 
     return {board, update, reset};
@@ -68,9 +59,11 @@ const gameLogic = (() => {
     const _playBtn = document.querySelector('#play'),
         _gameCells = document.querySelectorAll('.game-cell'),
         board = gameBoard.board;
+
     let _playerOne = playerFactory('', 'X', true),
         _playerTwo = playerFactory('', 'O', false),
-        gameState, aiMode = {};
+        gameState, aiMode = {}, _eval = {'X': 10, 'O': -10, 'tie': 0},
+        _operators = {'>': (a, b) => a > b, '<': (a, b) => a < b};
 
     const _createPlayers = () => {
         const playerOneInput = document.querySelector('#player1'),
@@ -78,13 +71,15 @@ const gameLogic = (() => {
             // set default name
             _playerOne.name = playerOneInput.placeholder;
             _playerTwo.name = playerTwoInput.placeholder;
-            // if user provided another name, change it
+            // if user provided a name, assign it
             if (playerOneInput.value) _playerOne.name = playerOneInput.value;
             if (playerTwoInput.value) _playerTwo.name = playerTwoInput.value;
+            // check if a player/bot has been selected
             (playerOneInput.classList.contains('bot')) ? _playerOne.isBot = true : _playerOne.isBot = false;
             (playerTwoInput.classList.contains('bot')) ? _playerTwo.isBot = true : _playerTwo.isBot = false;
     }
 
+    // switch between players
     const setActivePlayer = () => {
             if (_playerOne.isActive) {
                 _playerOne.isActive = false;
@@ -97,24 +92,117 @@ const gameLogic = (() => {
             }
         }
 
+    // fill board array and html divs
     const makeTurn = (i, player) => {
         board[i] = player.mark;
         _gameCells[i].innerHTML = `<p class="fd" style="color: ${displayController.setColor(board[i])}">${board[i]}</p>`;
     }
 
-    const minimax = (board) => {
-        return 1;
+    const _minimax = (board, depth, isMaximizing) => {
+
+        // check for winner and return appropriate score (terminal node)
+        let winner = checkPattern();
+        if (winner) return _eval[winner.mark]
+        else if (!board.includes(undefined)) return _eval['tie'];
+
+        // if it's X's turn
+        if (isMaximizing) {
+            let maxEval = -Infinity;
+            for (let i = 0; i < board.length; i++) {
+                // if the spot is free
+                if (board[i] === undefined) {
+                    // if there is only one bot
+                    if (Object.keys(gameLogic.aiMode).length === 2)
+                    // check who is maximizing
+                    (aiMode.bot.mark === 'X') ? board[i] = aiMode.bot.mark : board[i] = aiMode.player.mark;
+                    // if there are two bots
+                    else board[i] = aiMode.bot[0].mark;
+                    // run algorithm on new board
+                    let eval = _minimax(board, depth + 1, false);
+                    // undo move
+                    board[i] = undefined;
+                    // evaluate position
+                    maxEval = Math.max(eval, maxEval);
+                }
+            }
+            return maxEval;
+
+        // if it's O's turn
+        } else {
+            let minEval = Infinity;
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === undefined) {
+                    // if there is only one bot
+                    if (Object.keys(gameLogic.aiMode).length === 2)
+                    // check who is minimizing
+                    (aiMode.bot.mark === 'X') ? board[i] = aiMode.player.mark : board[i] = aiMode.bot.mark;
+                    // if there are two bots
+                    else board[i] = aiMode.bot[1].mark;
+                    let eval = _minimax(board, depth + 1, true);
+                    board[i] = undefined;
+                    minEval = Math.min(eval, minEval);
+                }
+            }
+            return minEval;
+        }
     }
-    
-    const bestSpot = () => {
-        let spot;
-        for (let i = 0; i < board.length; i++) {
+
+    // check if the bot is maximizing or minimizing and return appropriate values
+    const checkBotState = (state) => {
+        // if the bot is maximizing
+        if (state === undefined && aiMode.bot.mark === 'X' || state === 'max') {
+            return [false, -Infinity, '>'];
+        // if the bot is minimizing
+        } else if (state === undefined && aiMode.bot.mark === 'O' || state === 'min') {
+            return [true, Infinity, '<'];
+        }
+    }
+
+    // AI's turn
+    const bestSpot = (state) => {
+        let spot, isMaximizing, maxEval, op;
+
+        // if there is only one bot
+        if (state === undefined) [isMaximizing, maxEval, op] = checkBotState();
+        // if there are two bots, return appropiate values
+        else if (state === 'max') [isMaximizing, maxEval, op] = checkBotState('max');
+        else if (state === 'min') [isMaximizing, maxEval, op] = checkBotState('min');
+
+        for (let i = 0; i < board.length; i ++) {
             if (board[i] === undefined) {
-                spot = i;
-                break;
+                board[i] = aiMode.bot.mark;
+                let eval = _minimax(board, 0, isMaximizing);
+                board[i] = undefined;
+                // return best possible spot according to evaluation
+                if (_operators[op](eval, maxEval)) {
+                    maxEval = eval;
+                    spot = i;
+                }
             }
         }
         return spot;
+    }
+
+    // game between two bots
+    const botGame = () => {
+        let winner = checkPattern();
+
+        // make turns until there is a winner
+        function makeTurns() {
+            setTimeout(() => {
+                // first maximize (X's turn)
+                makeTurn(bestSpot('max'), _playerOne);
+                winner = checkPattern();
+                // if there is no winner, let 'O' move (minimize) and call function again
+                if (!winner) {
+                    makeTurns();
+                    setTimeout(() => makeTurn(bestSpot('min'), _playerTwo), 300);
+                }
+                else checkWinner(winner);
+            }, 500);
+        }
+
+        makeTurns();
     }
 
     // check for the right pattern
@@ -126,9 +214,7 @@ const gameLogic = (() => {
     }
 
     const checkPattern = () => {
-
         let winner = {};
-
 
         // determine correct pattern and line orientation
         if (_equalsThree(board[4], board[0], board[8], winner)) 
@@ -150,13 +236,12 @@ const gameLogic = (() => {
         else if (_equalsThree(board[8], board[2], board[5], winner))
             winner.orientation = `straight 90deg bottom`;
 
-
         // if there's a winner, set winner name and return winner object
         if (Object.keys(winner).length !== 0) {
             if (winner.mark === _playerOne.mark) winner.name = _playerOne.name
             else if (winner.mark === _playerTwo.mark) winner.name = _playerTwo.name;
             return winner;
-            // return false by default
+        // return false by default
         } else return false;
     }
 
@@ -165,32 +250,37 @@ const gameLogic = (() => {
         if (winner) {
             displayController.announceWinner(winner);
             gameLogic.gameState = false;
+            return true;
         // check for a tie
-        } else if (board.length === 9 && !board.includes(undefined)) {
+        } else if (!board.includes(undefined)) {
             displayController.announceWinner('');
             gameLogic.gameState = false;
-        }
+            return true;
+        } else return false;
     }
 
+    // initialize game
     const _game = () => {
+        gameLogic.gameState = true;
         _createPlayers();
         displayController.showBoard();
-        gameLogic.gameState = true;
 
-        if (_playerOne.isBot) {
+        // check if a bot has been selected
+        if (_playerOne.isBot && !_playerTwo.isBot) {
             aiMode.bot =  _playerOne;
             aiMode.player = _playerTwo;
-            gameLogic.makeTurn(gameLogic.bestSpot(), gameLogic.aiMode.bot);
-        } else if (_playerTwo.isBot) {
+            setTimeout(() => makeTurn(gameLogic.bestSpot(), gameLogic.aiMode.bot), 300);
+        } else if (_playerTwo.isBot && !_playerOne.isBot) {
             aiMode.bot =  _playerTwo;
             aiMode.player = _playerOne;
         } else if (_playerOne.isBot && _playerTwo.isBot) {
-            // play game between two bots
+            aiMode.bot = [_playerOne, _playerTwo];
+            botGame();
         }
         
         // if there's at least one player, enable board placing
         if (!_playerOne.isBot || !_playerTwo.isBot) {
-            _gameCells.forEach((cell, i) => cell.addEventListener('click', () => gameBoard.update(cell, i)));
+            _gameCells.forEach((cell, i) => cell.addEventListener('click', () => gameBoard.update(i)));
         }
     }
 
@@ -198,7 +288,7 @@ const gameLogic = (() => {
         _playBtn.addEventListener('click', _game);
     }
     
-    return {gameState, aiMode, setActivePlayer, makeTurn, bestSpot, checkPattern, checkWinner, beginGame};
+    return {gameState, aiMode, setActivePlayer, makeTurn, bestSpot, botGame, checkPattern, checkWinner, beginGame};
 })();
 
 
@@ -212,7 +302,7 @@ const displayController = (() => {
     let _title =  document.querySelector('#title');
 
     function _toggleAnim(toggle, animation, element) {
-        // remove/add animation to elements
+        // remove or add animation to elements
         const anim = ['animate__animated', `animate__${animation}`];
         for (i = 2; i < arguments.length; i++) {
             if (toggle === 'add') arguments[i].classList.add(anim[0], anim[1]);
@@ -226,15 +316,21 @@ const displayController = (() => {
         _winnerPara.innerHTML = '&nbsp;';
     }
 
-    // show winner and stop game
+    // show winner message
     const announceWinner = (winner) => {
         _winnerPara.style.visibility = 'visible';
         _againBtn.style.visibility = 'visible';
         if (typeof winner === 'string') {
             _winnerPara.innerHTML = `You tied.`;
+        } else if (Object.keys(gameLogic.aiMode).length === 1) {
+            _winnerPara.innerHTML = `This is pointless.`;
+            _drawLine(winner);
+        } else if (Object.keys(gameLogic.aiMode).length === 2 && winner.name === 'Unstoppable AI') {
+            _winnerPara.innerHTML = `<span style="color: ${setColor(winner.mark)}">Told you he's unstoppable :(</span>`;
+            _drawLine(winner);
         } else {
             _winnerPara.innerHTML = `Congrats <span style="color: ${setColor(winner.mark)}">${winner.name}</span>, you won!`;
-            displayController.drawLine(winner);
+            _drawLine(winner);
         }
         _toggleAnim('remove', 'fadeOut', _winnerPara, _againBtn, _winnerLine);
         _againBtn.removeEventListener('animationend', _hideWinner);
@@ -252,20 +348,20 @@ const displayController = (() => {
             playerImg = document.querySelectorAll('.player-img'),
             playerNames = document.querySelectorAll('.player-name');
 
-            // create text input for bot
-            let botNames = [];
-            for (let i = 0; i < playerNames.length; i++) {
-                botNames[i] = playerNames[i].cloneNode();
-                botNames[i].value = `Unstoppable AI`;
-                botNames[i].classList.add('bot');
-                botNames[i].style.borderColor = 'transparent';
-                botNames[i].disabled = true;
-                // add animations to all elements
-                _toggleAnim('add', 'fadeIn', botNames[i], playerNames[i]);
-                _toggleAnim('add', 'slideInRight', botImg[i]);
-            }
+        // create text input for bot
+        let botNames = [];
+        for (let i = 0; i < playerNames.length; i++) {
+            botNames[i] = playerNames[i].cloneNode();
+            botNames[i].value = `Unstoppable AI`;
+            botNames[i].classList.add('bot');
+            botNames[i].style.borderColor = 'transparent';
+            botNames[i].disabled = true;
+            // add animations to all elements
+            _toggleAnim('add', 'fadeIn', botNames[i], playerNames[i]);
+            _toggleAnim('add', 'slideInRight', botImg[i]);
+        }
 
-        // swap between bot img/input and player img/input
+        // swap between bot node and player node
         const swapImgAndInput = (img, i) => {
             if (img === 'bot') {
                 playerImg[i].style.display = 'none';
@@ -279,7 +375,7 @@ const displayController = (() => {
             }
         }
         
-        // hide clicked arrow, show the other one and show the correct img/input
+        // hide clicked arrow, show the other one and show the correct node
         const swapArrows = (current, i, other, img) => {
             current.addEventListener('click', e => {
                 current.style.visibility = 'hidden';
@@ -301,7 +397,7 @@ const displayController = (() => {
         document.querySelector('#select-container').style.display = 'none';
         gameContainer.style.display = 'block';
         _toggleAnim('add', 'fadeIn', gameContainer);
-        _againBtn.addEventListener('click', displayController.playAgain);
+        _againBtn.addEventListener('click', _playAgain);
     }
 
     // return the correct color
@@ -309,7 +405,8 @@ const displayController = (() => {
         return (mark === 'X') ? `var(--darkred)` : `var(--green)`;
     }
 
-    const drawLine = (winner) => {
+    const _drawLine = (winner) => {
+
         // set correct line orientation and color
         let orientation = winner.orientation.split(' '), color = setColor(winner.mark),
          direction = orientation[1], deg = `86.5%`;
@@ -326,12 +423,13 @@ const displayController = (() => {
     }
 
     // play another round
-    const playAgain = (e) => {
+    const _playAgain = (e) => {
         // fade out animation to button and winner text
         _toggleAnim('remove', 'fadeIn', _winnerPara, _againBtn);
         _toggleAnim('add', 'fadeOut', _againBtn, _winnerPara, _winnerLine);
         _againBtn.addEventListener('animationend', _hideWinner);
         _winnerLine.style.background = '';
+
         _gameCells.forEach(cell => {
             // select mark
             let cellContent = cell.childNodes[0];
@@ -343,6 +441,7 @@ const displayController = (() => {
                 // if it's empty, just clear it
             } else cell.innerHTML = '';
         });
+
         gameBoard.reset();
     }
 
@@ -358,16 +457,18 @@ const displayController = (() => {
         }
     }
 
-    // change color of each letter
+    // change color of title's letters
     const randomizeTitleColor = () => {
         let titleArray = _title.innerHTML.split("");
+        // for each letter
         for (let i = 0; i < titleArray.length; i++) {
+            // apply random color
             titleArray[i] = `<span style="color: ${_chooseColor()}">${titleArray[i]}</span>`;
         }
         _title.innerHTML = titleArray.join("");
     }
 
-    return {announceWinner, switchPlayer, showBoard, setColor, drawLine, playAgain, randomizeTitleColor};
+    return {announceWinner, switchPlayer, showBoard, setColor, randomizeTitleColor};
 })();
 
 
